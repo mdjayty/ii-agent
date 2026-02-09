@@ -27,6 +27,7 @@ from ii_agent.sub_agent.base import BaseAgentTool
 from ii_agent.sub_agent.researcher_agent_tool import ResearcherAgent
 from ii_agent.sub_agent.task_agent_tool import TaskAgentTool
 from ii_agent.sub_agent.design_document_agent import DesignDocumentAgent
+from ii_agent.sub_agent.travel_agent_tool import TravelAgentTool
 from ii_agent.utils.workspace_manager import WorkspaceManager
 from ii_agent.controller.tool_manager import AgentToolManager
 from ii_agent.llm.base import LLMClient, ToolParam
@@ -197,6 +198,48 @@ class AgentService:
         )
         return design_document_agent
 
+    async def create_travel_agent(
+        self,
+        llm_client: LLMClient,
+        tools: List[BaseTool],
+        context_manager: ContextManager,
+        event_stream: EventStream,
+        max_turns: int = 200,
+        tool_args: dict[str, Any] | None = None,
+        session_id: Optional[UUID] = None,
+        run_id: Optional[UUID] = None,
+    ) -> BaseAgentTool:
+        from ii_agent.sub_agent.travel_agent_tool import (
+            SYSTEM_PROMPT as TRAVEL_AGENT_PROMPT,
+        )
+
+        model_name = llm_client.model_name if llm_client else None
+        travel_agent_tool_names = AgentTypeConfig.get_allowed_toolset(
+            AgentType.TRAVEL_AGENT, model_name
+        )
+        tools = [tool for tool in tools if tool.name in set(travel_agent_tool_names)]
+        system_prompt = TRAVEL_AGENT_PROMPT
+        travel_agent_config = AgentConfig(
+            max_tokens_per_turn=self.config.max_output_tokens_per_turn,
+            system_prompt=system_prompt,
+        )
+        sub_agent = FunctionCallAgent(
+            llm=llm_client,
+            config=travel_agent_config,
+            tools=[tool.get_tool_params() for tool in tools],
+        )
+        travel_agent = TravelAgentTool(
+            agent=sub_agent,
+            tools=tools,
+            context_manager=context_manager,
+            event_stream=event_stream,
+            max_turns=max_turns,
+            config=self.config,
+            session_id=session_id,
+            run_id=run_id,
+        )
+        return travel_agent
+
     async def create_agent(
         self,
         llm_config: LLMConfig,
@@ -310,6 +353,19 @@ class AgentService:
                 run_id=agent_task.id,  # type: ignore
             )
             tool_manager.register_tools([design_doc_agent])
+
+        # Register Travel Agent if enabled
+        if tool_args is not None and tool_args.get("travel_agent"):
+            travel_subagent = await self.create_travel_agent(
+                llm_client=llm_client,
+                tools=all_sandbox_tools,
+                context_manager=context_manager,
+                event_stream=event_stream,
+                tool_args=tool_args,
+                session_id=uuid.UUID(agent_task.session_id),
+                run_id=agent_task.id,  # type: ignore
+            )
+            tool_manager.register_tools([travel_subagent])
 
         # Register Codex agent if enabled and codex port is set
         if tool_args is not None and tool_args.get("codex_tools"):

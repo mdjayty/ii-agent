@@ -62,6 +62,7 @@ class AgentType(str, Enum):
     DESIGN_DOCUMENT = "design_document"
     CODEX = "codex"
     CLAUDE_CODE = "claude_code"
+    TRAVEL_AGENT = "travel_agent"
 
 
 class AgentTypeConfig:
@@ -255,6 +256,24 @@ class AgentTypeConfig:
             TodoWriteTool.name,
             RegisterPort.name,
             FullStackInitTool.name,
+        ],
+        AgentType.TRAVEL_AGENT: [
+            # Communication
+            MessageUserTool.name,
+            # Shell tools (for Excel generation via Python)
+            ShellInit.name,
+            ShellRunCommand.name,
+            ShellView.name,
+            ShellList.name,
+            # File system tools (restricted to travel folder via system prompt)
+            FileReadTool.name,
+            FileWriteTool.name,
+            FileEditTool.name,
+            # Web tools (for research)
+            WebSearchTool.name,
+            WebVisitTool.name,
+            # Task management
+            TodoWriteTool.name,
         ],
     }
 

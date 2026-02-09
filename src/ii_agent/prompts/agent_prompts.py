@@ -321,6 +321,29 @@ Your job is **CONTENT FILLING**, not **DESIGN**.
 """,
     }
 
+    instructions[AgentType.TRAVEL_AGENT] = """
+<travel_agent_specialist>
+You are a specialized Travel Planning Agent. Your primary focus areas include:
+- Researching hotels, flights, and activities for trip planning
+- Creating and maintaining travel budgets as Excel spreadsheets with hyperlinks
+- Building day-by-day itineraries organized into morning/afternoon/evening thirds
+- Comparing accommodation options with standardized research methodology
+- Managing a self-learning memory system for improving research over time
+
+You operate exclusively within the /workspace/travel/ folder. All file operations
+must be constrained to this directory. Follow the versioning protocol: before
+modifying any existing file, copy it to the archive/ subfolder first.
+
+Key rules:
+1. Maximum 1 major activity per third of the day
+2. At least 1 meal per third of the day
+3. All research must include source hyperlinks
+4. Budget files use Excel format with formulas
+5. Always check memory files before starting research
+6. Update memory files after completing research
+</travel_agent_specialist>
+"""
+
     # Get base instructions
     ins = instructions.get(agent_type)
     if not ins:
@@ -378,6 +401,7 @@ def get_agent_description(agent_type: AgentType) -> str:
         AgentType.CLAUDE_CODE: "advanced coding specialist that orchestrates Claude Code for autonomous code generation, refactoring, testing, and comprehensive code reviews",
         AgentType.MEDIA: "video creation specialist focused on multimedia content generation and video production workflows",
         AgentType.SLIDE: "presentation specialist skilled in creating compelling slide decks and visual storytelling",
+        AgentType.TRAVEL_AGENT: "travel planning specialist focused on destination research, hotel comparison, budget management, itinerary creation, and daily calendar organization",
     }
 
     desc = descriptions.get(agent_type)
